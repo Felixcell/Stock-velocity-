@@ -175,4 +175,19 @@
         }
     </script>
 </body>
-</html>
+</html># Create and enter the project folder
+mkdir quick-stock-trader
+cd quick-stock-trader
+
+# Create a virtual environment (keeps your libraries isolated)
+python -m venv venv
+
+# Activate the virtual environment
+# On Windows:
+venv\Scripts\activate
+# On macOS/Linux:
+source venv/bin/activate
+
+# Install the necessary libraries
+pip install pandas numpy yfinance alpaca-py scikit-learn requests streamlit
+
