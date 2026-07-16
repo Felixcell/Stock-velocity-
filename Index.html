@@ -175,4 +175,43 @@
         }
     </script>
 </body>
-</html>
+</html>import pandas as pd
+import numpy as np
+
+def calculate_features(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Calculates technical indicators to use as inputs for our ML model.
+    """
+    # Prevent modifying the original DataFrame directly
+    df = df.copy()
+    
+    # 1. Calculate Returns (percentage change of close price)
+    df['Return'] = df['Close'].pct_change()
+    
+    # 2. Short-term vs Long-term SMA Ratio
+    df['SMA_10'] = df['Close'].rolling(window=10).mean()
+    df['SMA_30'] = df['Close'].rolling(window=30).mean()
+    df['SMA_Ratio'] = df['SMA_10'] / df['SMA_30']
+    
+    # 3. Relative Strength Index (RSI - 14 periods)
+    delta = df['Close'].diff()
+    gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
+    rs = gain / (loss + 1e-9) # Add tiny value to prevent division by zero
+    df['RSI'] = 100 - (100 / (1 + rs))
+    
+    # 4. Volatility (rolling standard deviation of returns)
+    df['Volatility'] = df['Return'].rolling(window=10).std()
+    
+    # Drop rows with NaN values created by rolling windows
+    df.dropna(inplace=True)
+    
+    return df
+
+if __name__ == "__main__":
+    from data_manager import fetch_historical_data
+    # Test calculating features
+    raw_df = fetch_historical_data("AAPL", period="5d", interval="5m")
+    featured_df = calculate_features(raw_df)
+    print(featured_df[['Close', 'RSI', 'SMA_Ratio', 'Volatility']].head())
+
