@@ -175,4 +175,45 @@
         }
     </script>
 </body>
-</html>
+</html>import yfinance as yf
+import pandas as pd
+import numpy as np
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+
+# 1. Download hourly stock data
+ticker = "AAPL"
+data = yf.download(ticker, period="2y", interval="1h")
+
+# 2. Feature Engineering: Create Indicators & Target Variable
+data['Return'] = data['Close'].pct_change()
+data['SMA_10'] = data['Close'].rolling(window=10).mean()
+data['SMA_30'] = data['Close'].rolling(window=30).mean()
+data['Volatility'] = data['Return'].rolling(window=10).std()
+
+# Target: 1 if the price goes UP in the next hour, 0 if it goes DOWN
+data['Target'] = np.where(data['Close'].shift(-1) > data['Close'], 1, 0)
+
+# Drop NaN values created by rolling calculations
+data.dropna(inplace=True)
+
+# 3. Define Features (X) and Target (y)
+features = ['Return', 'SMA_10', 'SMA_30', 'Volatility']
+X = data[features]
+y = data['Target']
+
+# Split into Train and Test sets (keeping chronological order)
+split_idx = int(len(X) * 0.8)
+X_train, X_test = X.iloc[:split_idx], X.iloc[split_idx:]
+y_train, y_test = y.iloc[:split_idx], y.iloc[split_idx:]
+
+# 4. Train the Model
+model = RandomForestClassifier(n_estimators=100, random_state=42)
+model.fit(X_train, y_train)
+
+# 5. Evaluate Performance
+predictions = model.predict(X_test)
+accuracy = accuracy_score(y_test, predictions)
+print(f"Model Directional Accuracy: {accuracy * 100:.2f}%")
+
