@@ -175,4 +175,56 @@
         }
     </script>
 </body>
-</html>
+</html>from broker_connection import trading_client
+from alpaca.trading.requests import MarketOrderRequest
+from alpaca.trading.enums import OrderSide, TimeInForce
+
+def execute_market_order(symbol: str, qty: int, side: str) -> bool:
+    """
+    Executes a market order via Alpaca.
+    - symbol: e.g., "AAPL", "TSLA"
+    - qty: Number of shares (integer)
+    - side: "buy" or "sell"
+    """
+    order_side = OrderSide.BUY if side.lower() == "buy" else OrderSide.SELL
+    
+    # Define order parameters
+    market_order_data = MarketOrderRequest(
+        symbol=symbol,
+        qty=qty,
+        side=order_side,
+        time_in_force=TimeInForce.DAY
+    )
+    
+    try:
+        print(f"Submitting {side.upper()} order for {qty} shares of {symbol}...")
+        order = trading_client.submit_order(order_data=market_order_data)
+        print(f"Order successfully filled! ID: {order.id}")
+        return True
+    except Exception as e:
+        print(f"Order failed for {symbol}: {e}")
+        return False
+
+def get_current_positions():
+    """Prints all currently held positions in your portfolio."""
+    try:
+        positions = trading_client.get_all_positions()
+        if not positions:
+            print("No active open positions.")
+            return []
+            
+        print("--- ACTIVE POSITIONS ---")
+        for pos in positions:
+            print(f"Stock: {pos.symbol} | Qty: {pos.qty} | Market Value: ${float(pos.market_value):,.2f} | Unrealized PnL: ${float(pos.unrealized_pl):,.2f}")
+        return positions
+    except Exception as e:
+        print(f"Failed to fetch positions: {e}")
+        return []
+
+if __name__ == "__main__":
+    # Test our helper functions by buying 1 share of Apple (AAPL)
+    # Note: Only run this test when the US stock market is open (9:30 AM - 4:00 PM EST),
+    # otherwise market orders will fail or queue until next morning.
+    print("Testing connection and positions...")
+    get_current_positions()
+
